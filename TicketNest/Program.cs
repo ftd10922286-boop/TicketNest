@@ -13,8 +13,8 @@ namespace TicketNest
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            
-            
+
+
 
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                                             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -37,7 +37,11 @@ namespace TicketNest
             builder.Services.Configure<SmtpOptions>(builder.Configuration.GetSection("SmtpOptions"));
 
             // Add services to the container.
-            builder.Services.AddControllersWithViews();
+            builder.Services.AddControllersWithViews()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+                });
 
             var app = builder.Build();
 

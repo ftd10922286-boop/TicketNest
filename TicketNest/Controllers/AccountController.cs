@@ -11,6 +11,7 @@ using TicketNest.Data;
 using TicketNest.Models;
 using TicketNest.Models.AccountViewModels;
 using TicketNest.Services;
+using static src.MVC.Accounts;
 using IEmailSender = TicketNest.Services.IEmailSender; //
 
 namespace TicketNest.Controllers
@@ -43,6 +44,14 @@ namespace TicketNest.Controllers
         }
 
         // User Registration
+
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult RegisterSuccess()
+        {
+            return View();
+        }
+
         [HttpGet]
         [AllowAnonymous]
         public IActionResult Register(string returnUrl = null)
@@ -57,58 +66,33 @@ namespace TicketNest.Controllers
         public async Task<IActionResult> Register(RegisterViewModel model, string returnUrl = null)
         {
             ViewData["ReturnUrl"] = returnUrl;
-
             if (ModelState.IsValid)
             {
-                
-                var user = new ApplicationUser
-                {
-                    UserName = model.Email,
-                    Email = model.Email,
-                    FullName = model.FullName
-                };
-
-                
+                var user = new ApplicationUser { UserName = model.Email, Email = model.Email, FullName = model.FullName };
+                //user registered using registration screen is SuperAdmin
+                user.IsSuperAdmin = true;
                 var result = await _userManager.CreateAsync(user, model.Password);
-
                 if (result.Succeeded)
                 {
-                    // Register successful
-                    //await _signInManager.SignInAsync(user, isPersistent: false);
-
-                    //if (!string.IsNullOrEmpty(returnUrl))
-                    //{
-                    //    return Redirect(returnUrl); 
-                    //}
-                    //else
-                    //{
-                    //    return RedirectToAction("Index", "Home"); 
-                    //}
+                    _logger.LogInformation("User created a new account with password.");
 
                     //create default organization
                     _dotnetdesk.CreateDefaultOrganization(user.Id, _context).Wait();
 
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                     var callbackUrl = Url.EmailConfirmationLink(user.Id, code, Request.Scheme);
-                    await _emailSender.SendEmailConfirmationAsync(user.Email, callbackUrl);
-
-                    
+                    await _emailSender.SendEmailConfirmationAsync(model.Email, callbackUrl);
 
                     //email should be confirmed then can logged in
-                    await _signInManager.SignInAsync(user, isPersistent: false);
+                    //await _signInManager.SignInAsync(user, isPersistent: false);
                     _logger.LogInformation("User created a new account with password.");
-                    return Redirect("/");
+                    return RedirectToAction(nameof(RegisterSuccess));
                 }
-                else
-                {
-                    
-                    foreach (var error in result.Errors)
-                    {
-                        ViewData["Error"] = error.Description;
-                    }
-                }
+                AddErrors(result);
             }
-                  return View(model); // Validation fail return form
+
+            // If we got this far, something failed, redisplay form
+            return View(model);
         }
 
         // User Login
@@ -147,7 +131,7 @@ namespace TicketNest.Controllers
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User logged in.");
-                    return Redirect("/");
+                    return RedirectToLocal(returnUrl);
                 }
                 if (result.RequiresTwoFactor)
                 {
@@ -179,7 +163,7 @@ namespace TicketNest.Controllers
             await _signInManager.SignOutAsync();
             _logger.LogInformation("Logout successful");
 
-            return Redirect("/");
+            return Redirect(TicketNest.MVC.Pages.ConfigIndex.FullUrl);
 
         }
 
@@ -303,6 +287,18 @@ namespace TicketNest.Controllers
             {
                 ModelState.AddModelError(string.Empty, error.Description);
                 ViewData["Error"] += error.Description;
+            }
+        }
+
+        private IActionResult RedirectToLocal(string returnUrl)
+        {
+            if (Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+            else
+            {
+                return Redirect(MVC.Pages.ConfigIndex.FullUrl);
             }
         }
 

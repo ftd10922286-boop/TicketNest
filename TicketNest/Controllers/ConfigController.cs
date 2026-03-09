@@ -1,12 +1,13 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using src.Data;
-using src.Models;
+using TicketNest.Controllers;
+using TicketNest.Data;
+using TicketNest.Models;
 
 namespace src.Controllers
 {
@@ -27,7 +28,7 @@ namespace src.Controllers
         {
             if (!this.IsHaveEnoughAccessRight())
             {
-                return NotFound();
+                return RedirectToAction("Login", "Account");
             }
 
             ApplicationUser appUser = await _userManager.GetUserAsync(User);
@@ -59,10 +60,11 @@ namespace src.Controllers
 
                 return View(orgList);
             }
-            else {
-                return View();
+            else
+            {
+                return View(new List<Organization>());
             }
-            
+
         }
 
         public async Task<IActionResult> Organization()
@@ -73,7 +75,7 @@ namespace src.Controllers
 
         public async Task<IActionResult> AddEditOrganization(Guid id)
         {
-            
+
             if (Guid.Empty == id)
             {
                 ApplicationUser appUser = await _userManager.GetUserAsync(User);

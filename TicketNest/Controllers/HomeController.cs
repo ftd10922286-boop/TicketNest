@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TicketNest.Models;
 using System.Diagnostics;
-using TicketNest.Models;
+
 
 
 namespace TicketNest.Controllers

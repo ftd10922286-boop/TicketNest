@@ -1,5 +1,6 @@
 using System.Text.Encodings.Web;
 
+
 namespace TicketNest.Services
 {
     public static class EmailSenderExtensions
